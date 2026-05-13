@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Newsletter</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; background: #111827; color: #f9fafb; }
+        .content { background-color: #1f2937; padding: 20px; border-radius: 8px; border: 1px solid #374151; }
+        .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 20px; }
+        a { color: #10b981; }
+    </style>
+</head>
+<body>
+    <h1>Policy Advocacy Newsletter</h1>
+    <div class="meta">Generated for {{ newsletter.month }}/{{ newsletter.year }} at {{ newsletter.created_at|date:"Y-m-d H:i" }}</div>
+    <div class="content">{{ newsletter.content|linebreaks }}</div>
+    <div style="margin-top: 20px;">
+        <a href="{% url 'dashboard_main' %}">&larr; Back to Dashboard</a>
+    </div>
+</body>
+</html>

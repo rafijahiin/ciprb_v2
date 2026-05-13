@@ -1,0 +1,17 @@
+# Bengali translations
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurms=2; plural=(n != 1);\n"
+
+msgid "English"
+msgstr ""
+
+msgid "Bangla"
+msgstr ""
+
+msgid "Data-to-Action Gap"
+msgstr "ডাটা-টু-অ্যাকশন গ্যাপ"
+
+msgid "CIPRB Real-time M&E Dashboard"
+msgstr "সিআইপিআরবি রিয়েল-টাইম এম অ্যান্ড ই ড্যাশবোর্ড"

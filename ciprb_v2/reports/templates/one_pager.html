@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Infographic Report</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; color: #333; }
+        .header { text-align: center; background-color: #10b981; color: white; padding: 20px; border-radius: 10px; }
+        .section { margin-top: 30px; }
+        .card-container { display: flex; justify-content: space-between; }
+        .card { width: 45%; background-color: #f3f4f6; padding: 20px; border-radius: 10px; box-sizing: border-box; }
+        .number { font-size: 3em; font-weight: bold; color: #10b981; }
+        .rose-number { color: #f43f5e; }
+        .amber-number { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Monthly Impact Report</h1>
+        <p>CIPRB - Fistula & MPDSR Tracking</p>
+    </div>
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <div class="card-container">
+            <div class="card">
+                <h3>Fistula Operations</h3>
+                <div class="number">{{ fistula_operated }}</div>
+                <p>Successful Surgeries</p>
+            </div>
+            <div class="card">
+                <h3>MPDSR Deaths</h3>
+                <div class="number rose-number">{{ total_deaths }}</div>
+                <p>Reported Cases</p>
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Data-to-Action Gap</h2>
+        <div class="card" style="width: 100%;">
+            <h3>Implemented Actions</h3>
+            <div class="number amber-number">{{ action_gap_percent|floatformat:1 }}%</div>
+            <p>Percentage of recommended actions successfully implemented.</p>
+        </div>
+    </div>
+</body>
+</html>

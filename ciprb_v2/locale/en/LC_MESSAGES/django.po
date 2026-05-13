@@ -1,0 +1,10 @@
+# English (passthrough)
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "English"
+msgstr ""
+
+msgid "Bangla"
+msgstr ""

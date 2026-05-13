@@ -1,0 +1,13 @@
+<select
+    name="action_status"
+    hx-post="{% url 'update_action_status' event.event_id %}"
+    hx-target="#status-cell-{{ event.event_id }}"
+    hx-swap="innerHTML"
+    class="bg-gray-700 text-white text-sm rounded border border-gray-600 p-1
+    {% if event.action_status == 'IMPLEMENTED' %}text-emerald-400 font-bold{% elif event.action_status == 'PENDING' %}text-rose-400{% else %}text-amber-400{% endif %}"
+>
+    <option value="PENDING" {% if event.action_status == 'PENDING' %}selected{% endif %}>Pending</option>
+    <option value="FUNDED" {% if event.action_status == 'FUNDED' %}selected{% endif %}>Funded</option>
+    <option value="IMPLEMENTED" {% if event.action_status == 'IMPLEMENTED' %}selected{% endif %}>Implemented</option>
+    <option value="STALLED" {% if event.action_status == 'STALLED' %}selected{% endif %}>Stalled</option>
+</select>

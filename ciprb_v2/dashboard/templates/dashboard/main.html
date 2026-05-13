@@ -1,0 +1,428 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIPRB M&E Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #e2e8f0; --muted: #64748b; --green: #10b981; --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6; --purple: #a855f7; }
+        * { box-sizing: border-box; }
+        body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+        .stat-num { font-family: 'IBM Plex Mono', monospace; font-size: 2.2rem; font-weight: 600; line-height: 1; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.68rem; font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.04em; }
+        .badge-p  { background: rgba(239,68,68,0.15); color: #f87171; }
+        .badge-f  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .badge-i  { background: rgba(16,185,129,0.15); color: #34d399; }
+        .badge-s  { background: rgba(100,116,139,0.15); color: #94a3b8; }
+        .nav-btn  { padding: 5px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); cursor: pointer; background: none; border: none; transition: all 0.15s; font-family: 'IBM Plex Mono', monospace; }
+        .nav-btn:hover { color: var(--text); background: var(--border); }
+        .nav-btn.active { color: var(--green); background: rgba(16,185,129,0.1); }
+        .section { display: none; }
+        .section.active { display: block; }
+        label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 4px; font-family: 'IBM Plex Mono', monospace; }
+        input, select, textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 4px; width: 100%; font-size: 0.85rem; font-family: 'IBM Plex Sans', sans-serif; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green); }
+        .btn { padding: 8px 18px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; font-family: 'IBM Plex Mono', monospace; text-decoration: none; display: inline-block; }
+        .btn-g { background: var(--green); color: #000; }
+        .btn-g:hover { background: #059669; }
+        .btn-o { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .btn-o:hover { border-color: var(--muted); color: var(--text); }
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-family: 'IBM Plex Mono', monospace; padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; vertical-align: middle; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .alert-c { border-left: 3px solid var(--red); background: rgba(239,68,68,0.05); }
+        .alert-w { border-left: 3px solid var(--amber); background: rgba(245,158,11,0.05); }
+        .bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 3px; }
+        .pip-step { text-align: center; }
+        .pip-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.8rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header style="background:#020617;border-bottom:1px solid #1e293b;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981;"></div>
+        <span class="mono" style="font-size:0.8rem;font-weight:600;color:#10b981;letter-spacing:0.1em;">CIPRB M&amp;E</span>
+        <span class="mono" style="font-size:0.7rem;color:#334155;margin-left:8px;">UNFPA-SRHR · RCH</span>
+    </div>
+    <nav style="display:flex;gap:2px;">
+        <button class="nav-btn active" onclick="show('overview',this)">Overview</button>
+        <button class="nav-btn" onclick="show('fistula',this)">Fistula</button>
+        <button class="nav-btn" onclick="show('mpdsr',this)">MPDSR</button>
+        <button class="nav-btn" onclick="show('partners',this)">Partners</button>
+        <button class="nav-btn" onclick="show('activities',this)">Activities</button>
+        <button class="nav-btn" onclick="show('training',this)">Training</button>
+        <button class="nav-btn" onclick="show('reports',this)">Reports</button>
+    </nav>
+    <span class="mono" id="clk" style="font-size:0.7rem;color:#334155;"></span>
+</header>
+
+<main style="padding:24px;max-width:1400px;margin:0 auto;">
+
+<!-- ══ OVERVIEW ══ -->
+<div id="s-overview" class="section active">
+
+    {% if alerts %}
+    <div style="margin-bottom:20px;">
+        <div class="mono" style="font-size:0.68rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">⚠ Behind-Target Alerts</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+            {% for a in alerts %}
+            <div class="card p-4 alert-{% if a.level == 'critical' %}c{% else %}w{% endif %}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div><div class="mono" style="font-size:0.7rem;color:var(--muted);">{{ a.partner }}</div><div style="font-size:0.85rem;margin-top:4px;">{{ a.actual }} / {{ a.target }} activities</div></div>
+                    <span class="mono" style="font-size:1.2rem;font-weight:700;color:{% if a.level == 'critical' %}var(--red){% else %}var(--amber){% endif %};">{{ a.pct }}%</span>
+                </div>
+                <div class="bar" style="margin-top:10px;"><div class="bar-fill" style="width:{{ a.pct }}%;background:{% if a.level == 'critical' %}var(--red){% else %}var(--amber){% endif %};"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Fistula Operated</div>
+            <div class="stat-num" style="color:var(--green);">{{ fistula_operated }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">of {{ fistula_goal }} target · {{ fistula_progress }}%</div>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">MPDSR Events</div>
+            <div class="stat-num" style="color:var(--amber);">{{ total_mpdsr }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">{{ pending_mpdsr }} pending action</div>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Beneficiaries Reached</div>
+            <div class="stat-num" style="color:var(--blue);">{{ total_beneficiaries }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">across all activities</div>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Staff Trained</div>
+            <div class="stat-num" style="color:var(--purple);">{{ total_participants }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">in {{ total_training_sessions }} sessions</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="card" style="padding:20px;display:flex;flex-direction:column;align-items:center;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;align-self:flex-start;">Fistula Progress</div>
+            <div style="position:relative;width:150px;height:150px;">
+                <canvas id="c-ring"></canvas>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <span class="mono" style="font-size:1.6rem;font-weight:700;color:var(--green);">{{ fistula_progress }}%</span>
+                    <span style="font-size:0.7rem;color:var(--muted);">of goal</span>
+                </div>
+            </div>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">MPDSR Action Status</div>
+            <canvas id="c-status" height="160"></canvas>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Deaths by District</div>
+            <canvas id="c-district" height="160"></canvas>
+        </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="card" style="padding:20px;margin-bottom:20px;">
+        <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Fistula Referral Pipeline</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+            {% for label, count in pipeline.items %}
+            <div class="pip-step">
+                <div class="pip-val" style="color:var(--green);">{{ count }}</div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">{{ label }}</div>
+                <div class="bar" style="margin-top:8px;"><div class="bar-fill" style="background:var(--green);width:{% if fistula_total > 0 %}{% widthratio count fistula_total 100 %}{% else %}0{% endif %}%;"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Data-to-action -->
+    <div class="card" style="padding:20px;">
+        <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Data-to-Action Gap · {{ action_gap_percent }}% Implemented</div>
+        <div style="display:flex;align-items:center;gap:32px;">
+            <div style="width:180px;height:90px;position:relative;flex-shrink:0;">
+                <canvas id="c-gauge"></canvas>
+            </div>
+            <div style="display:flex;gap:32px;">
+                <div><div class="mono" style="font-size:1.5rem;color:var(--green);">{{ implemented_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);">Implemented</div></div>
+                <div><div class="mono" style="font-size:1.5rem;color:var(--red);">{{ pending_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);">Pending</div></div>
+                <div><div class="mono" style="font-size:1.5rem;color:var(--muted);">{{ stalled_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);">Stalled</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ FISTULA ══ -->
+<div id="s-fistula" class="section">
+    <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Fistula Campaign Tracker</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+        {% for label, count in pipeline.items %}
+        <div class="card" style="padding:16px;text-align:center;">
+            <div class="mono" style="font-size:2rem;font-weight:700;color:var(--green);">{{ count }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">{{ label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="card" style="padding:20px;">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Patient ID</th><th>District</th><th>Upazila</th><th>Referral Status</th><th>Surgery Outcome</th><th>Equity</th></tr></thead>
+                <tbody>
+                {% for c in fistula_cases %}
+                <tr>
+                    <td class="mono" style="font-size:0.75rem;color:var(--muted);">{{ c.patient_id|stringformat:"s"|truncatechars:12 }}</td>
+                    <td>{{ c.district }}</td><td>{{ c.upazila }}</td>
+                    <td><span class="badge {% if c.referral_status == 'OPERATED' %}badge-i{% elif c.referral_status == 'IDENTIFIED' %}badge-p{% else %}badge-f{% endif %}">{{ c.referral_status }}</span></td>
+                    <td style="color:var(--muted);">{{ c.surgery_outcome }}</td>
+                    <td style="font-size:1rem;">{% if c.has_disability %}🦽 {% endif %}{% if c.is_ethnic_minority %}🏔 {% endif %}{% if c.is_displaced %}🏕{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px;">No fistula cases yet. Submit via KoboToolbox webhook.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MPDSR ══ -->
+<div id="s-mpdsr" class="section">
+    <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">MPDSR Event Tracker</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--text);">{{ total_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Total Events</div></div>
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--green);">{{ implemented_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Implemented</div></div>
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--red);">{{ pending_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Pending</div></div>
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--muted);">{{ stalled_mpdsr }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Stalled</div></div>
+    </div>
+    <div class="card" style="padding:20px;">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Event ID</th><th>Type</th><th>District</th><th>Facility</th><th>Cause of Death</th><th>Recommended Action</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for event in mpdsr_events %}
+                <tr>
+                    <td class="mono" style="font-size:0.72rem;color:var(--muted);">{{ event.event_id|stringformat:"s"|truncatechars:10 }}</td>
+                    <td><span class="badge badge-p">{{ event.death_type }}</span></td>
+                    <td>{{ event.district }}</td>
+                    <td style="color:var(--muted);">{{ event.facility_name|truncatechars:20 }}</td>
+                    <td style="color:var(--muted);">{{ event.cause_of_death|truncatechars:25 }}</td>
+                    <td style="color:var(--muted);">{{ event.recommended_action|truncatechars:28 }}</td>
+                    <td id="status-cell-{{ event.event_id }}">{% include "dashboard/partials/status_dropdown.html" with event=event %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;">No MPDSR events yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ══ PARTNERS ══ -->
+<div id="s-partners" class="section">
+    <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Partner Performance</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+        {% for partner, data in partner_data.items %}
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.85rem;font-weight:700;color:var(--green);margin-bottom:16px;">{{ partner }}</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:0.8rem;color:var(--muted);">Activities</span><span class="mono" style="font-size:0.85rem;">{{ data.activities }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:0.8rem;color:var(--muted);">Beneficiaries</span><span class="mono" style="font-size:0.85rem;">{{ data.beneficiaries }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:0.8rem;color:var(--muted);">Training Sessions</span><span class="mono" style="font-size:0.85rem;">{{ data.trainings }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="font-size:0.8rem;color:var(--muted);">Staff Trained</span><span class="mono" style="font-size:0.85rem;">{{ data.participants }}</span></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Activities by Partner</div>
+            <canvas id="c-pact" height="200"></canvas>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Beneficiaries by Partner</div>
+            <canvas id="c-pben" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ══ ACTIVITIES ══ -->
+<div id="s-activities" class="section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Log New Activity</div>
+            <form method="post" action="/activities/add/">
+                {% csrf_token %}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div><label>Partner</label><select name="partner"><option value="CIPRB">CIPRB</option><option value="PHD">PHD</option><option value="Bondhu">Bondhu</option></select></div>
+                    <div><label>Date</label><input type="date" name="activity_date" required></div>
+                    <div><label>District</label><input type="text" name="district" placeholder="e.g. Dhaka" required></div>
+                    <div><label>Upazila</label><input type="text" name="upazila" placeholder="e.g. Gulshan" required></div>
+                    <div><label>Activity Type</label><input type="text" name="activity_type" placeholder="e.g. Outreach Visit" required></div>
+                    <div><label>Staff Name</label><input type="text" name="staff_name" placeholder="Name" required></div>
+                    <div><label>Beneficiary Count</label><input type="number" name="beneficiary_count" value="0" min="0"></div>
+                    <div><label>Notes</label><input type="text" name="notes" placeholder="Optional"></div>
+                </div>
+                <button type="submit" class="btn btn-g">Log Activity</button>
+            </form>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Recent Activities</div>
+            <div style="overflow-y:auto;max-height:400px;display:flex;flex-direction:column;gap:8px;">
+                {% for log in recent_activities %}
+                <div style="border:1px solid var(--border);border-radius:6px;padding:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><span class="mono" style="font-size:0.72rem;color:var(--green);">{{ log.partner }}</span><span style="font-size:0.85rem;margin-left:8px;">{{ log.activity_type }}</span></div>
+                        <span class="mono" style="font-size:0.7rem;color:var(--muted);">{{ log.activity_date }}</span>
+                    </div>
+                    <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">{{ log.district }}, {{ log.upazila }} · <span style="color:var(--text);">{{ log.beneficiary_count }} beneficiaries</span></div>
+                </div>
+                {% empty %}
+                <div style="text-align:center;color:var(--muted);padding:32px;font-size:0.85rem;">No activities logged yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TRAINING ══ -->
+<div id="s-training" class="section">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--purple);">{{ total_training_sessions }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Sessions Held</div></div>
+        <div class="card" style="padding:16px;"><div class="mono" style="font-size:1.8rem;color:var(--blue);">{{ total_participants }}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Total Participants</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Log Training Session</div>
+            <form method="post" action="/training/add/">
+                {% csrf_token %}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div><label>Partner</label><select name="partner"><option value="CIPRB">CIPRB</option><option value="PHD">PHD</option><option value="Bondhu">Bondhu</option></select></div>
+                    <div><label>Date</label><input type="date" name="session_date" required></div>
+                    <div><label>District</label><input type="text" name="district" placeholder="e.g. Dhaka" required></div>
+                    <div><label>Topic</label><input type="text" name="topic" placeholder="e.g. KoboToolbox Data Entry" required></div>
+                    <div><label>Trainer Name</label><input type="text" name="trainer_name" placeholder="Name" required></div>
+                    <div><label>Participants</label><input type="number" name="participants_count" value="0" min="0"></div>
+                    <div style="grid-column:span 2;"><label>Competency Level</label><select name="competency_level"><option value="BEGINNER">Beginner</option><option value="DEVELOPING">Developing</option><option value="PROFICIENT">Proficient</option><option value="EXPERT">Expert</option></select></div>
+                    <div style="grid-column:span 2;"><label>Notes</label><textarea name="notes" rows="2" placeholder="Optional remarks"></textarea></div>
+                </div>
+                <button type="submit" class="btn btn-g">Log Session</button>
+            </form>
+        </div>
+        <div class="card" style="padding:20px;">
+            <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Training Log</div>
+            <div style="overflow-y:auto;max-height:420px;">
+                <table>
+                    <thead><tr><th>Partner</th><th>Topic</th><th>Date</th><th>Participants</th><th>Level</th></tr></thead>
+                    <tbody>
+                    {% for s in training_sessions %}
+                    <tr>
+                        <td class="mono" style="font-size:0.72rem;color:var(--green);">{{ s.partner }}</td>
+                        <td style="font-size:0.82rem;">{{ s.topic|truncatechars:28 }}</td>
+                        <td class="mono" style="font-size:0.72rem;color:var(--muted);">{{ s.session_date }}</td>
+                        <td class="mono">{{ s.participants_count }}</td>
+                        <td><span class="badge badge-f">{{ s.competency_level }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;font-size:0.85rem;">No training sessions logged yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ REPORTS ══ -->
+<div id="s-reports" class="section">
+    <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Report Generation</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px;">
+            <div class="mono" style="font-size:0.85rem;font-weight:700;color:var(--blue);">AI Newsletter</div>
+            <div style="font-size:0.8rem;color:var(--muted);">Generate a policy advocacy newsletter from live data using Gemini AI.</div>
+            <a href="/reports/generate-newsletter/" class="btn btn-g" style="align-self:flex-start;">Generate Now</a>
+        </div>
+        <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px;">
+            <div class="mono" style="font-size:0.85rem;font-weight:700;color:var(--green);">One-Pager PDF</div>
+            <div style="font-size:0.8rem;color:var(--muted);">Download an infographic summary of fistula and MPDSR programme data.</div>
+            <a href="/reports/export/pdf/" class="btn btn-g" style="align-self:flex-start;">Download PDF</a>
+        </div>
+        <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px;">
+            <div class="mono" style="font-size:0.85rem;font-weight:700;color:var(--amber);">PowerPoint Export</div>
+            <div style="font-size:0.8rem;color:var(--muted);">Download a structured MPDSR and fistula review presentation deck.</div>
+            <a href="/reports/export/ppt/" class="btn btn-g" style="align-self:flex-start;">Download PPT</a>
+        </div>
+    </div>
+</div>
+
+</main>
+
+<script>
+// Clock
+setInterval(()=>{ document.getElementById('clk').textContent = new Date().toUTCString().slice(0,25); }, 1000);
+
+// Nav
+function show(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('s-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Charts
+Chart.defaults.color = '#64748b';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size = 11;
+
+new Chart(document.getElementById('c-ring'), {
+    type: 'doughnut',
+    data: { datasets: [{ data: [{{ fistula_operated }}, Math.max(0, {{ fistula_goal }} - {{ fistula_operated }})] , backgroundColor: ['#10b981','#1e293b'], borderWidth:0, cutout:'83%' }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ tooltip:{ enabled:false } } }
+});
+
+new Chart(document.getElementById('c-status'), {
+    type: 'doughnut',
+    data: { labels: ['Implemented','Pending','Stalled'], datasets: [{ data:[{{ implemented_mpdsr }},{{ pending_mpdsr }},{{ stalled_mpdsr }}], backgroundColor:['#10b981','#ef4444','#475569'], borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, padding:12 } } } }
+});
+
+new Chart(document.getElementById('c-district'), {
+    type: 'bar',
+    data: { labels: {{ heatmap_labels|safe }}, datasets:[{ label:'Deaths', data:{{ heatmap_data|safe }}, backgroundColor:'#f59e0b', borderRadius:3 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#1e293b' } }, x:{ grid:{ display:false } } } }
+});
+
+new Chart(document.getElementById('c-gauge'), {
+    type: 'doughnut',
+    data: { datasets:[{ data:[{{ action_gap_percent }}, Math.max(0, 100 - {{ action_gap_percent }})], backgroundColor:['#10b981','#1e293b'], borderWidth:0, circumference:180, rotation:270, cutout:'80%' }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ tooltip:{ enabled:false } } }
+});
+
+const pL = {{ partner_labels|safe }};
+const pC = ['#10b981','#3b82f6','#a855f7'];
+
+new Chart(document.getElementById('c-pact'), {
+    type:'bar', data:{ labels:pL, datasets:[{ data:{{ partner_activities|safe }}, backgroundColor:pC, borderRadius:4 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#1e293b' } }, x:{ grid:{ display:false } } } }
+});
+
+new Chart(document.getElementById('c-pben'), {
+    type:'bar', data:{ labels:pL, datasets:[{ data:{{ partner_beneficiaries|safe }}, backgroundColor:pC, borderRadius:4 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#1e293b' } }, x:{ grid:{ display:false } } } }
+});
+</script>
+</body>
+</html>

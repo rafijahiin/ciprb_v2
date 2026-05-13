@@ -1,0 +1,9 @@
+Django>=4.2
+dj-database-url
+gunicorn
+whitenoise
+djangorestframework
+psycopg2-binary
+weasyprint
+python-pptx
+google-genai
