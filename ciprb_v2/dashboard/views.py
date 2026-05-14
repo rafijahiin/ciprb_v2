@@ -1,3 +1,4 @@
+import os
 import json
 from django.shortcuts import render
 from django.db.models import Count, Sum, Q
@@ -100,6 +101,10 @@ def dashboard_main(request):
         'total_participants': total_participants,
         'total_training_sessions': total_training_sessions,
     }
+    # KoboToolbox form URLs from environment
+    context['kobo_fistula_url'] = os.environ.get('KOBO_FISTULA_URL', '')
+    context['kobo_mpdsr_url'] = os.environ.get('KOBO_MPDSR_URL', '')
+    context['kobo_baseline_url'] = os.environ.get('KOBO_BASELINE_URL', '')
     context['fistula_cases'] = FistulaCase.objects.all().order_by('-id')
     context['training_sessions'] = TrainingSession.objects.all().order_by('-session_date')
     return render(request, 'dashboard/main.html', context)
