@@ -113,6 +113,16 @@
         </div>
     </div>
 
+    <!-- Quick Actions -->
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <span class="mono" style="font-size:0.68rem;color:var(--muted);align-self:center;text-transform:uppercase;letter-spacing:0.08em;">Data Entry:</span>
+        {% if kobo_fistula_url %}<a href="{{ kobo_fistula_url }}" target="_blank" class="btn btn-g">📋 Fistula Form</a>{% endif %}
+        {% if kobo_mpdsr_url %}<a href="{{ kobo_mpdsr_url }}" target="_blank" class="btn btn-g">📋 MPDSR Form</a>{% endif %}
+        {% if kobo_baseline_url %}<a href="{{ kobo_baseline_url }}" target="_blank" class="btn btn-g">📋 Baseline Form</a>{% endif %}
+        <a href="/activities/add/" class="btn btn-o">+ Log Activity</a>
+        <a href="/training/add/" class="btn btn-o">+ Log Training</a>
+    </div>
+
     <!-- Charts -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
         <div class="card" style="padding:20px;display:flex;flex-direction:column;align-items:center;">
@@ -127,11 +137,27 @@
         </div>
         <div class="card" style="padding:20px;">
             <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">MPDSR Action Status</div>
-            <canvas id="c-status" height="160"></canvas>
+            {% if total_mpdsr > 0 %}
+            <div style="position:relative;height:160px;width:100%;">
+                <canvas id="c-status"></canvas>
+            </div>
+            {% else %}
+            <div style="height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:1px dashed #1e293b;border-radius:6px;">
+                <div style="font-size:0.75rem;color:var(--muted);">No MPDSR events yet</div>
+                <div style="font-size:0.7rem;color:#334155;">Submit via KoboToolbox to populate</div>
+            </div>
+            {% endif %}
         </div>
         <div class="card" style="padding:20px;">
             <div class="mono" style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Deaths by District</div>
+            {% if total_mpdsr > 0 %}
             <canvas id="c-district" height="160"></canvas>
+            {% else %}
+            <div style="height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:1px dashed #1e293b;border-radius:6px;">
+                <div style="font-size:0.75rem;color:var(--muted);">No district data yet</div>
+                <div style="font-size:0.7rem;color:#334155;">Submit via KoboToolbox to populate</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -190,7 +216,10 @@
                     <td style="font-size:1rem;">{% if c.has_disability %}🦽 {% endif %}{% if c.is_ethnic_minority %}🏔 {% endif %}{% if c.is_displaced %}🏕{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px;">No fistula cases yet. Submit via KoboToolbox webhook.</td></tr>
+                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px;">
+                    <div style="margin-bottom:12px;">No fistula cases yet.</div>
+                    <a href="{{ kobo_fistula_url }}" target="_blank" class="btn btn-g" style="font-size:0.75rem;">📋 Fill Fistula Form</a>
+                </td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -223,7 +252,10 @@
                     <td id="status-cell-{{ event.event_id }}">{% include "dashboard/partials/status_dropdown.html" with event=event %}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;">No MPDSR events yet.</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;">
+                    <div style="margin-bottom:12px;">No MPDSR events yet.</div>
+                    <a href="{{ kobo_mpdsr_url }}" target="_blank" class="btn btn-g" style="font-size:0.75rem;">📋 Fill MPDSR Form</a>
+                </td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -393,6 +425,7 @@ new Chart(document.getElementById('c-ring'), {
     options: { responsive:true, maintainAspectRatio:false, plugins:{ tooltip:{ enabled:false } } }
 });
 
+{% if total_mpdsr > 0 %}
 new Chart(document.getElementById('c-status'), {
     type: 'doughnut',
     data: { labels: ['Implemented','Pending','Stalled'], datasets: [{ data:[{{ implemented_mpdsr }},{{ pending_mpdsr }},{{ stalled_mpdsr }}], backgroundColor:['#10b981','#ef4444','#475569'], borderWidth:0 }] },
@@ -402,8 +435,9 @@ new Chart(document.getElementById('c-status'), {
 new Chart(document.getElementById('c-district'), {
     type: 'bar',
     data: { labels: {{ heatmap_labels|safe }}, datasets:[{ label:'Deaths', data:{{ heatmap_data|safe }}, backgroundColor:'#f59e0b', borderRadius:3 }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#1e293b' } }, x:{ grid:{ display:false } } } }
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'#1e293b' } }, x:{ grid:{ display:false } } } }
 });
+{% endif %}
 
 new Chart(document.getElementById('c-gauge'), {
     type: 'doughnut',
