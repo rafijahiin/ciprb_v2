@@ -24,7 +24,7 @@ def generate_newsletter_narrative(month, year):
 
     try:
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(model='gemini-1.5-pro', contents=prompt)
+        response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
         return response.text
     except Exception as e:
         return f"Error generating narrative: {str(e)}"
